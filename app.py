@@ -1,11 +1,18 @@
 import streamlit as st
 from search import perform_search
-from extractor import extract_leads
+from extractor import extract_single_lead
 from export import export_leads
 from history import save_to_history, load_history
+from utils import get_current_ip, renew_tor_ip
+
 
 st.set_page_config(page_title="Lead Generation Tool", layout="wide")
 st.title("🔍 Smart Lead Generation Platform")
+
+st.markdown(f"🧠 **Current Tor IP:** `{get_current_ip()}`")
+if st.button("🔄 Renew Tor IP"):
+    renew_tor_ip()
+    st.rerun()
 
 query = st.text_input("Enter your search query:")
 location = st.text_input("Location (optional):")
@@ -16,10 +23,14 @@ num_results = st.slider("Number of search results", 10, 100, 20)
 if st.button("Generate Leads"):
     with st.spinner("Searching and extracting leads..."):
         search_results = perform_search(query, location, keywords, exclude, num_results)
-        leads = extract_leads(search_results)
+        leads = []
+        lead_placeholder = st.empty()
+        for res in search_results:
+            lead = extract_single_lead(res)
+            leads.append(lead)
+            lead_placeholder.dataframe(leads)
         save_to_history(leads)
     st.success(f"Found {len(leads)} leads.")
-    st.dataframe(leads)
     export_leads(leads)
 
 st.markdown("---")
